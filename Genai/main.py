@@ -247,7 +247,7 @@ leonardo = Leonardo(auth_token=api_key)
 
 # Default values for hidden parameters
 MODEL_IDS = {
-    "Phoenix_1.0": "b24e16ff-06e3-43eb-8d33-4416c2d75876",
+    "Phoenix_1.0": "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3",
     "Lightning_XL": "aa77f04e-3eec-4034-9c07-d0f619684628",
     "Phoenix_0.9": "6b645e3a-d64f-4341-a6d8-7a3690fbf042",
     "Photoreal": "aa77f04e-3eec-4034-9c07-d0f619684628"
