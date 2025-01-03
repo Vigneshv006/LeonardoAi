@@ -224,7 +224,6 @@
 
 
 
-
 import streamlit as st
 import requests
 import json
@@ -268,7 +267,7 @@ DB_CONFIG = {
 def validate_inputs(num_images, width, height):
     """Validate user inputs and return processed values."""
     errors = []
-    
+   
     try:
         num_images = int(num_images) if num_images else 1
         if not (1 <= num_images <= 8):
@@ -301,11 +300,11 @@ def store_in_database(prompt, contrast, num_images, width, height, image_url, en
         with psycopg2.connect(**DB_CONFIG) as conn:
             with conn.cursor() as cursor:
                 query = """
-                    INSERT INTO leonardo_prompts 
+                    INSERT INTO leonardo_prompts
                     (prompts, contrast, number_of_images, width, height, image_path, enhanced_prompts)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """
-                cursor.execute(query, (prompt, contrast, num_images, width, height, 
+                cursor.execute(query, (prompt, contrast, num_images, width, height,
                                     image_url, enhanced_prompt))
         st.success("Data stored in the database successfully!")
     except Exception as e:
@@ -323,7 +322,7 @@ def generate_image(model_type, data):
             },
             data=json.dumps(data)
         )
-        
+       
         if response.status_code != 200:
             st.error(f"Request failed with status code {response.status_code}")
             st.write("Response:", response.text)
@@ -336,13 +335,13 @@ def generate_image(model_type, data):
 
         generation_id = response_data['sdGenerationJob']['generationId']
         image_response = leonardo.wait_for_image_generation(generation_id=generation_id)
-        
+       
         if 'url' not in image_response:
             st.error("Image URL not found in the response")
             return None
-            
+           
         return image_response['url']
-        
+       
     except Exception as e:
         st.error(f"Error generating image: {e}")
         return None
@@ -361,8 +360,9 @@ width = st.text_input("Width", placeholder="Enter value between 100px and 1024px
 height = st.text_input("Height", placeholder="Enter value between 100px and 1024px")
 
 # Alchemy selection
-alchemy = st.radio("Alchemy", options=[True, False], index=None, 
+alchemy = st.radio("Alchemy", options=[True, False], index=None,
                    help="Alchemy is used for image quality enhancement")
+
 
 # Model-specific settings
 model_settings = {}
@@ -370,14 +370,19 @@ if model_type in ["Phoenix_1.0", "Phoenix_0.9"]:
     enhance_prompt = st.radio("Enhance Prompt", options=[True, False], index=1)
     if enhance_prompt:
         enhanced_prompt = st.text_area("Enhanced Prompt Details")
-        model_settings["enhancePrompt"] = enhanced_prompt
-    
+        model_settings["enhancePrompt"] = enhance_prompt 
+
 elif model_type in ["Lightning_XL", "Photoreal"]:
+    # Use radio button instead of checkbox for enabling photo realism
+    photo_realism = st.radio("Enable Photo Realism", options=["True", "False"], index=0)
     model_settings.update({
-        "photoReal": st.checkbox("Enable Photo Realism", value=True),
-        "presetStyle": st.selectbox("Select Style", ["CINEMATIC", "FASHION"]),
-        "photoRealVersion": "v2"
+        "photoReal": photo_realism == "True",  # Convert string to boolean (True/False)
+        "presetStyle": st.selectbox("Select Style", ["CINEMATIC"]),
     })
+    
+    # Set photoRealVersion only if photoReal is enabled
+    if model_settings.get("photoReal"):
+        model_settings["photoRealVersion"] = "v2"
 
 # Generate button
 if st.button('Generate Mood Board'):
@@ -386,7 +391,7 @@ if st.button('Generate Mood Board'):
     else:
         # Validate inputs
         num_images_val, width_val, height_val, errors = validate_inputs(num_images, width, height)
-        
+       
         if errors:
             for error in errors:
                 st.error(error)
@@ -402,11 +407,12 @@ if st.button('Generate Mood Board'):
                 "styleUUID": STYLE_UUID,
                 **model_settings
             }
-            
+           
             # Generate image
             image_url = generate_image(model_type, data)
             if image_url:
-                st.image(image_url, caption='Generated Fashion Mood Board', 
+                st.image(image_url, caption='Generated Fashion Mood Board',
                         use_container_width=True)
-                store_in_database(prompt, 1, num_images_val, width_val, height_val, 
+                store_in_database(prompt, 1, num_images_val, width_val, height_val,
                                 image_url, model_settings.get("enhancePrompt"))
+
